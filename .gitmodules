@@ -1,0 +1,3 @@
+[submodule "Apollo"]
+	path = Apollo
+	url = git@github.com:ebonywolf/Apollo.git
