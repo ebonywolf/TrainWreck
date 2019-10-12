@@ -9,15 +9,16 @@ struct Grid:  public Entity<MapDataPtr,Path>,public Entity<Strtuple,Path>, publi
 
     Grid()
     {
+        pathConn::setRunFunction(tracePath);
     }
-    static tracePath(pathConn::Entityptr me)
+    static void tracePath(pathConn::Entityptr me)
     {
         auto root = getRoot(me);
         auto changed = me->getChanged();
         Strtuple val = changed->getValue(me);
 
-        root->searchConn::sendValue( root->at(val.first), true );
-        root->searchConn::sendValue( root->at(val.second), false );
+        root->searchConn::sendValue( root->at(val.first), START );
+        root->searchConn::sendValue( root->at(val.second), END );
     }
 
 };

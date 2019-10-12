@@ -1,131 +1,111 @@
-#include <bits/stdc++.h>
-#include "Apollo/Entity.h"
-#include "Apollo/Specials.h"
+//#include <bits/stdc++.h>
 
+#include <any>
+#include <iostream>
+#include <SFML/Graphics.hpp>
+#include "Apollo/Coord.h"
+#include "Apollo2/Process.h"
 
+#include "out.h"
 
-using namespace pg;
-
-#include "Data.h"
-#include "InputParser.h"
-#include "Stop.h"
-#include "Grid.h"
-#include "Pathfinder.h"
 using namespace std;
+using namespace pg;
+/*
+sf::Color defaultColor = sf::Color(255,0,0,255);
+Coord defaultSize = Coord(5,5);
 
+int MAX_Y=500;
+Renderer renderer = Renderer({500,MAX_Y});;
 
+vector<Spriteptr> sprites;
 
-struct Main : public Entity<StopData, std::string>,public Entity<Path,MapDataPtr>, public pg::Singleton<Main> {
-    using Parser = Entity<StopData, std::string>;
-    using PathRequester = Entity<Path,MapDataPtr>;
-
-    MapDataPtr mapData;
-
-    std::istream& ss;
-    Main():ss(std::cin)
+struct Square: public sf::RectangleShape {
+    Square(Coord size, Coord position, sf::Color color)
     {
-        init();
+        this->setPosition( position.x, position.y );
+        this->setFillColor( sf::Color( color ) );
+        this->setSize( { size.x, size.y } );
     }
-    Main(std::istream& in):ss(in)
-    {
-        init();
-    }
+};
+Spriteptr createSquare(Coord position, Coord size)
+{
+    position.y = MAX_Y - position.y;
+    Spriteptr sprite = Spriteptr(new Square( size, position,defaultColor));
+    sprites.push_back(sprite);
+    return sprite;
+}
 
-    void init()
-    {
-        Parser::setRunFunction( Main::ack );
-        mapData = make_shared<MapData>();
-    }
-    MapData& getData()
-    {
-        return *mapData.get();
-    }
+void drawCurve(Axles axles, double maxPrecision=100)
+{
+    for (int i=0; i<axles.size() -1; i++) {
+        Coord current = axles[i];
+        Coord next = axles[i+1];
+        double xvar = (next.y - current.x)/maxPrecision;
+        for (double precision=0; precision < maxPrecision; precision++) {
+            double x_position =  current.x + xvar*precision ;
+            Coord currentPosition = {x_position, 10};
+            renderer.add(createSquare(currentPosition,defaultSize));
 
+            for (int j=0; j<axles.size(); j++) {
+                if(i==j)
+                    continue;
+                Coord j_axle = axles[j];
 
-    static ack(Parser::Entityptr me)
-    {
-        std::cout<<__PRETTY_FUNCTION__<<std::endl;
-        auto root = getRoot(me);
-        for(auto& x: me->getChangedEntities()) {
-            StopData data = x->getValue(me);
-            root->getData()[data.id]= data;
-
+                double size = axles.size();
+                //       double totalDistance= current.distance(x_position);
+                //totalDistance+= j_axle
+            }
         }
-        auto pathfinder = PathFinder::get();
-        root->PathRequester::sendValue(pathfinder,  root->mapData);
+        // Coord position = {current.x}
+    }
+}
+
+*/
+
+inline std::string className(const std::string& prettyFunction)
+{
+    size_t colons = prettyFunction.find("::");
+    if (colons == std::string::npos)
+        return "::";
+    size_t begin = prettyFunction.substr(0,colons).rfind(" ") + 1;
+    size_t end = colons - begin;
+
+    return prettyFunction.substr(begin,end);
+}
+
+#define __CLASS_NAME__ className(__PRETTY_FUNCTION__)
+
+
+
+struct Ack: public GenericData<Ack>{
+};
+
+struct BoxInfo: public GenericData<BoxInfo>{
+    pg::Coord pos,dim;
+};
+
+class BoxDrawer: Entity{
+public:
+    BoxDrawer():Entity(drawBox){
+        std::cerr<<__CLASS_NAME__<<std::endl;
     }
 
-    void run()
-    {
-        string startPoint;
-        ss >> startPoint;
-        ss.ignore();
-        std::cout<<startPoint<<std::endl;
-        string endPoint;
-        ss >> endPoint;
-        ss.ignore();
-        std::cout<<endPoint<<std::endl;
-        int N;
-        ss >> N;
-        ss.ignore();
-        for (int i = 0; i < N; i++) {
-            string stopName;
-            getline(ss, stopName);
-            std::cout<<stopName<<std::endl;
-            auto inputParser = InputParser::get();
-            Parser::sendValue( inputParser,stopName );
-        }
-        int M;
-        ss >> M;
-        ss.ignore();
-        for (int i = 0; i < M; i++) {
-            string route;
-            getline(ss, route);
-            addRoute(route);
+    static Ack drawBox(BoxInfo box){
+        std::cerr<<"Got box:"<<box<<std::endl;
+    }
 
-        }
-        auto me = Parser::shared_from_this();
-        GlobalRunner::get()->addOmni( me );
-    }
-    void addRoute(string line)
-    {
-        vector<string> result;
-        stringstream ss(line);
-        while( ss.good() ) {
-            string substr;
-            getline( ss, substr, ' ' );
-            result.push_back( substr );
-        }
-        mapData->routes[result[0]]= result[1];
-    }
-private:
 
 };
 
-string testCase = "StopArea:ABDU\n\
-StopArea:ABLA\n\
-3\n\
-StopArea:ABDU,\"Abel Durand\",,47.22019661,-1.60337553,,,1,\n\
-StopArea:ABLA,\"Avenue Blanche\",,47.22973509,-1.58937990,,,1,\n\
-StopArea:ACHA,\"Angle Chaillou\",,47.26979248,-1.57206627,,,1,\n\
-2\n\
-StopArea:ABDU StopArea:ABLA\n\
-StopArea:ABLA StopArea:ACHA";
 
-#define cin ss
-
-
-
-int main()
+int main(int argc,char** argv)
 {
-    stringstream ss (testCase);
-    Main* m= new Main(ss);
-    Main::get(m);
 
-    m->run();
-    std::cerr<<"Starting"<<std::endl;
-    GlobalRunner::get()->update();
-    std::cerr<<"Done"<<std::endl;
+
+    Entityptr context = ContextCreator::createFromJson("test.json");
+    BoxInfo box;
+
+    context->send<Ack>(box);
+
+    return 0;
 }
-
-

@@ -15,14 +15,16 @@ struct PathFinder : public Entity<MapDataPtr,Path>, public Entity<Void,StopData>
         mainConn::setRunFunction(CreateChart);
     }
 
-    static CreateChart(mainConn::Entityptr me)
+    static void CreateChart(mainConn::Entityptr me)
     {
         auto root = getRoot(me);
-        for(auto& x:me->getChangedEntities()) {
-            //should never have more than 1
-            MapDataPtr mapa = x->getValue(me);
-            root->createMap(mapa);
-        }
+        auto changed = me->getChanged();
+        MapDataPtr mapa = changed->getValue(me);
+
+        std::cerr<<"Creating:"<< mapa->routes.size()<<std::endl;
+
+        root->createMap(mapa);
+
     }
     void createMap(MapDataPtr mapa)
     {
@@ -37,8 +39,10 @@ struct PathFinder : public Entity<MapDataPtr,Path>, public Entity<Void,StopData>
         for(auto& x: mapa->routes) {
             auto from = grid->at(x.first);
             auto to = grid->at(x.second);
+            std::cerr<<"Set route:"<<from->data<<" "<<to->data<<std::endl;
             routeConn::sendValue(from, to);
         }
+
         Strtuple tup = {mapa->startPoint,mapa->endPoint};
         gridConn::sendValue(grid,tup);
     }
