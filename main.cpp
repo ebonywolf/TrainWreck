@@ -5,7 +5,7 @@
 #include <SFML/Graphics.hpp>
 #include "Apollo/Coord.h"
 #include "Apollo2/Process.h"
-
+#include "Apollo2/SpecialEntities.h"
 #include "out.h"
 
 using namespace std;
@@ -76,36 +76,48 @@ inline std::string className(const std::string& prettyFunction)
 #define __CLASS_NAME__ className(__PRETTY_FUNCTION__)
 
 
-
 struct Ack: public GenericData<Ack>{
 };
 
 struct BoxInfo: public GenericData<BoxInfo>{
     pg::Coord pos,dim;
+    friend ostream& operator<<(ostream& os, const BoxInfo& b){
+        os<<b.pos;
+        return os;
+    }
+
 };
 
-class BoxDrawer: Entity{
+class BoxDrawer: public GenericEntity<BoxDrawer>{
 public:
-    BoxDrawer():Entity(drawBox){
-        std::cerr<<__CLASS_NAME__<<std::endl;
+    BoxDrawer():GenericEntity(__CLASS_NAME__,drawBox){
     }
 
     static Ack drawBox(BoxInfo box){
         std::cerr<<"Got box:"<<box<<std::endl;
     }
-
-
 };
+
 
 
 int main(int argc,char** argv)
 {
+    try{
+        Entityptr context = ContextCreator::createFromJson("test.json");
+        BoxInfo box;
+        Entityptr alce= Entityptr(new Entity());
+        alce->addOmni("BoxCreator",context);
+        std::cerr<<"Handlers:"<<context->_eurus.size()<<std::endl;
+        for(auto& it:context->_eurus)
+        {
+            std::cerr<<"Pair for:"<<it.first<<std::endl;
+        }
+        alce->send<Ack>(box);
+        context->run();
 
-
-    Entityptr context = ContextCreator::createFromJson("test.json");
-    BoxInfo box;
-
-    context->send<Ack>(box);
-
+    }catch(runtime_error& e){
+        std::cout<<e.what()<<std::endl;
+    }
+   // Ack ack =context->send<Ack>(box);
     return 0;
 }
